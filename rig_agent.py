@@ -23,7 +23,9 @@ Config keys (all optional):
     - repo: /path/to/repo
       files: [relative/paths.py]
       goal: "..."
-  discovery: none               # none | dirty-repos (later: more probes)
+  discovery: none               # none | dirty-repos
+  verify_cmd:                   # optional shell test command after AST/compile pass
+  verify_cwd:                   # cwd for verify_cmd
 
 Env:
   FREEINFERENCE_API_KEY  (or secretsmith keyring label of same name)
@@ -43,6 +45,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 
 import yaml
 
@@ -52,14 +55,16 @@ sys.path.insert(0, str(RIG_HOME.parent / "agentic-completions" / "_archive" / "p
 sys.path.insert(0, str(RIG_HOME.parent / "codeflux-patchling"))
 
 DEFAULTS = {
-    "model": "glm-5.3-flash",
-    "fallback_models": ["qwen3.6-35b", "deepseek-v4-flash"],
+    "model": "qwen3.6-35b",
+    "fallback_models": ["glm-5.3-flash", "deepseek-v4-flash"],
     "max_attempts": 3,
     "mode": "dry-run",
     "interval_minutes": 30,
     "outbox": str(RIG_HOME / "outbox"),
     "discovery": "none",
     "tasks": [],
+    "verify_cmd": None,
+    "verify_cwd": None,
 }
 
 
@@ -87,7 +92,8 @@ def get_key() -> str:
 
 
 def model_call(messages: list[dict], cfg: dict, key: str) -> tuple[str, str]:
-    """Try primary then fallbacks. Returns (text, model_used)."""
+    """Try primary then fallbacks. Returns (text, model_used).
+    Cooldown after any failure so a 429-observed lane isn't hammered instantly."""
     from completions import chat
     for model in [cfg["model"], *cfg["fallback_models"]]:
         try:
@@ -97,6 +103,7 @@ def model_call(messages: list[dict], cfg: dict, key: str) -> tuple[str, str]:
                 return text, model
         except Exception as e:
             print(f"rig: model {model} failed: {e}", file=sys.stderr)
+            time.sleep(2)
     raise RuntimeError("all models failed")
 
 
@@ -153,7 +160,12 @@ def attempt_task(task: dict, cfg: dict, key: str) -> dict:
     original = snapshot(names, str(repo))
     goal = task["goal"]
     feedback = ""
+    attempts: list[dict] = []
+    backoff_until = 0.0
     for attempt in range(1, cfg["max_attempts"] + 1):
+        now = time.time()
+        if now < backoff_until:
+            time.sleep(backoff_until - now)
         excerpts = "\n\n".join(
             f"FILE {f}:\n```python\n{src[:12000]}\n```" for f, src in original.items())
         messages = [
@@ -165,13 +177,24 @@ def attempt_task(task: dict, cfg: dict, key: str) -> dict:
             {"role": "user", "content": excerpts + f"\n\nGoal: {goal}" +
                 (f"\n\nPrevious attempt rejected: {feedback}\nFix it." if feedback else "")},
         ]
-        text, used = model_call(messages, cfg, key)
+        try:
+            text, used = model_call(messages, cfg, key)
+        except Exception as e:
+            attempts.append({"attempt": attempt, "model": cfg["model"],
+                             "stage": "model_call", "error": str(e)[:300]})
+            backoff_until = time.time() + 5 * len(attempts)
+            feedback = f"model_call error: {e}"
+            print(f"  attempt {attempt}: model_call error — {e}")
+            continue
         m = re.search(r"```diff\n(.*?)```", text, re.S)
         if not m:
             m = re.search(r"(^--- .*\n.*\n@@.*)", text, re.S | re.M)
         diff = m.group(1).strip() if m else ""
         if not diff:
             feedback = "no diff block in response"
+            attempts.append({"attempt": attempt, "model": used,
+                             "stage": "model", "error": feedback})
+            print(f"  attempt {attempt}: rejected — {feedback}")
             continue
         out = pc.smartapply(diff, dict(original))
         changed = {k: v for k, v in out.items()
@@ -182,11 +205,15 @@ def attempt_task(task: dict, cfg: dict, key: str) -> dict:
                 hints = semantic_hints(goal, diff, original)
                 if hints:
                     feedback = (feedback + "; " if feedback else "") + "; ".join(hints)
+            attempts.append({"attempt": attempt, "model": used,
+                             "stage": "smartapply", "feedback": feedback})
             print(f"  attempt {attempt}: rejected — {feedback}")
             continue
         return {"ok": True, "diff": diff, "files": changed, "model": used,
-                "attempts": attempt, "original": original}
-    return {"ok": False, "error": "max attempts exhausted", "model": cfg["model"]}
+                "attempts": attempt, "original": original,
+                "attempts_detail": attempts}
+    return {"ok": False, "error": "max attempts exhausted", "model": cfg["model"],
+            "attempts_detail": attempts}
 
 
 def verify(changed: dict[str, str], cfg: dict) -> tuple[bool, list[tuple[str, bool, str]]]:
@@ -288,7 +315,6 @@ def serve(cfg: dict, key: str, once: bool = False) -> None:
                 print(f"rig: task error: {e}", file=sys.stderr)
         if once:
             return
-        import time
         time.sleep(cfg["interval_minutes"] * 60)
 
 
