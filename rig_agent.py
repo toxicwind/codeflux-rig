@@ -48,6 +48,7 @@ import yaml
 
 RIG_HOME = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(RIG_HOME.parent / "agentic-completions"))
+sys.path.insert(0, str(RIG_HOME.parent / "agentic-completions" / "_archive" / "py"))
 sys.path.insert(0, str(RIG_HOME.parent / "codeflux-patchling"))
 
 DEFAULTS = {
