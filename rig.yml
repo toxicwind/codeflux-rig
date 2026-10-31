@@ -1,11 +1,11 @@
 # codeflux-rig configuration — model chain is the obvious knob
-model: glm-5.3-flash
-fallback_models: [qwen3.6-35b, deepseek-v4-flash]
+model: qwen3.6-35b
+fallback_models: [glm-5.3-flash, deepseek-v4-flash]
 max_attempts: 3
 mode: dry-run            # dry-run | apply | apply-push
 interval_minutes: 30
 outbox: /home/toxic/pens/forge/products/codeflux-rig/outbox
-discovery: dirty-repos   # none | dirty-repos
+discovery: none   # none | dirty-repos
 
 tasks:
   - repo: /home/toxic/pens/ranch/products/squawk
