@@ -1,0 +1,3 @@
+outbox/
+__pycache__/
+*.pyc
