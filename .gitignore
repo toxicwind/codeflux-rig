@@ -1,3 +1,4 @@
 outbox/
 __pycache__/
 *.pyc
+.github/workflows/ # CI lane local-only: token lacks workflow scope (anomaly #84)

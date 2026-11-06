@@ -4,7 +4,7 @@ fallback_models: [glm-5.3-flash, deepseek-v4-flash]
 max_attempts: 3
 mode: dry-run            # dry-run | apply | apply-push
 interval_minutes: 30
-outbox: /home/toxic/pens/forge/products/codeflux-rig/outbox
+outbox: /home/toxic/pens/flux/products/codeflux-rig/outbox
 discovery: none   # none | dirty-repos
 
 tasks:
