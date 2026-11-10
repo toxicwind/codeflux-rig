@@ -1,0 +1,28 @@
+{
+  "name": "codeflux-rig",
+  "version": "0.1.0",
+  "description": "A focused, dependency-free tool for the task it solves.",
+  "main": "index.ts",
+  "scripts": {
+    "dev": "bun --hot run index.ts",
+    "test": "bun test",
+    "typecheck": "tsgo --noEmit -p tsconfig.json",
+    "lint": "biome check .",
+    "fmt": "biome format --write .",
+    "build": "bun build --target=bun --outfile=dist/index.js index.ts"
+  },
+  "keywords": [],
+  "author": "@toxicwind",
+  "license": "MIT",
+  "devDependencies": {
+    "@biomejs/biome": "^1.5.3",
+    "@types/bun": "^1.0.0",
+    "bun-types": "^1.0.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "bun": ">=1.1.0"
+  },
+  "type": "module",
+  "private": true
+}

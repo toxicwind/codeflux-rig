@@ -83,12 +83,18 @@ def get_key() -> str:
     key = os.environ.get("FREEINFERENCE_API_KEY")
     if key:
         return key
-    r = subprocess.run(["secretsmith", "get", "--label", "FREEINFERENCE_API_KEY", "--show"],
+    # kryptos keyring is the estate SSOT (since 2026-11-02); secretsmith is
+    # retired. `kryptos --json get` emits {"label":..., "secret":...}.
+    r = subprocess.run(["kryptos", "--json", "get", "FREEINFERENCE_API_KEY", "--no-fuzzy"],
                        capture_output=True, text=True, timeout=30)
-    for line in r.stdout.splitlines():
-        if line.startswith("secret: "):
-            return line.removeprefix("secret: ").strip()
-    raise RuntimeError("no FREEINFERENCE_API_KEY (env or keyring)")
+    try:
+        parsed = json.loads(r.stdout)
+        secret = parsed.get("secret") or parsed.get("value")
+        if isinstance(secret, str) and secret:
+            return secret
+    except Exception:
+        pass
+    raise RuntimeError("no FREEINFERENCE_API_KEY (env or kryptos keyring)")
 
 
 def model_call(messages: list[dict], cfg: dict, key: str) -> tuple[str, str]:
