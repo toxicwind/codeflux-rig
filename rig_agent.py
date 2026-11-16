@@ -83,7 +83,7 @@ def get_key() -> str:
     key = os.environ.get("FREEINFERENCE_API_KEY")
     if key:
         return key
-    # kryptos keyring is the estate SSOT (since 2026-11-02); secretsmith is
+    # kryptos keyring is the Pens SSOT (since 2026-11-02); secretsmith is
     # retired. `kryptos --json get` emits {"label":..., "secret":...}.
     r = subprocess.run(["kryptos", "--json", "get", "FREEINFERENCE_API_KEY", "--no-fuzzy"],
                        capture_output=True, text=True, timeout=30)
