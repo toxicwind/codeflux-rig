@@ -2,3 +2,25 @@ outbox/
 __pycache__/
 *.pyc
 .github/workflows/ # CI lane local-only: token lacks workflow scope (anomaly #84)
+# pensctl audit-gitignore --fix (standard pollution)
+.venv/
+# pensctl audit-gitignore --fix (standard pollution)
+venv/
+# pensctl audit-gitignore --fix (standard pollution)
+node_modules/
+# pensctl audit-gitignore --fix (standard pollution)
+dist/
+# pensctl audit-gitignore --fix (standard pollution)
+build/
+# pensctl audit-gitignore --fix (standard pollution)
+.cache/
+# pensctl audit-gitignore --fix (standard pollution)
+target/
+# pensctl audit-gitignore --fix (standard pollution)
+blobs/
+# pensctl audit-gitignore --fix (standard pollution)
+sessions/
+# pensctl audit-gitignore --fix (standard pollution)
+.next/
+# pensctl audit-gitignore --fix (standard pollution)
+.turbo/

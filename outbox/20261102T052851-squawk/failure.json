@@ -1,0 +1,25 @@
+{
+  "ok": false,
+  "error": "max attempts exhausted",
+  "model": "qwen3.6-35b",
+  "attempts_detail": [
+    {
+      "attempt": 1,
+      "model": "qwen3.6-35b",
+      "stage": "smartapply",
+      "feedback": "diff did not apply"
+    },
+    {
+      "attempt": 2,
+      "model": "qwen3.6-35b",
+      "stage": "smartapply",
+      "feedback": "diff did not apply"
+    },
+    {
+      "attempt": 3,
+      "model": "qwen3.6-35b",
+      "stage": "smartapply",
+      "feedback": "diff did not apply"
+    }
+  ]
+}

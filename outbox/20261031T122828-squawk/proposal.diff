@@ -1,0 +1,29 @@
+--- a/fleet_tasks.py
++++ b/fleet_tasks.py
+@@ -316,3 +316,25 @@ def release_task(root: str | Path, channel: str, task_id: str, owner: str) -> bool:
+     effective_owner = task.get
++
++
++def task_stats(channel_dir: str | Path) -> dict:
++    """Count task JSON files by status under ``<channel_dir>/tasks``.
++
++    Returns ``{"open": n, "claimed": n, "done": n}``. Corrupt or unreadable
++    task files are skipped rather than raising, so a torn read never breaks
++    stats. Uses the same tolerant read as _read_task_json but per-file, since
++    a missing tasks dir simply means zero tasks.
++    """
++    tdir = Path(channel_dir) / "tasks"
++    counts = {status: 0 for status in STATUSES}
++    if not tdir.is_dir():
++        return counts
++    for entry in tdir.iterdir():
++        if not entry.name.endswith(".json") or entry.name == _EVENTS_LOG:
++            continue
++        try:
++            task = _read_task_json(entry)
++        except FleetTaskError:
++            continue
++        status = task.get("status")
++        if status in counts:
++            counts[status] += 1
++    return counts
